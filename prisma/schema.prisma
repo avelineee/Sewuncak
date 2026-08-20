@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model outfits {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String         @db.VarChar(150)
+  category      String         @db.VarChar(50)
+  description   String?
+  size          String?        @db.VarChar(10)
+  color         String?        @db.VarChar(50)
+  price_per_day Int
+  stock         Int            @default(0)
+  image_url     String?
+  status        String         @default("AVAILABLE") @db.VarChar(30)
+  created_at    DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?      @default(now()) @db.Timestamptz(6)
+  rental_items  rental_items[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rental_items {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rental_id     String    @db.Uuid
+  outfit_id     String    @db.Uuid
+  quantity      Int       @default(1)
+  price_per_day Int
+  subtotal      Int
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  outfits       outfits   @relation(fields: [outfit_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rental_item_outfit")
+  rentals       rentals   @relation(fields: [rental_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rental_item_rental")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rentals {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String         @db.Uuid
+  rental_date  DateTime       @db.Date
+  return_date  DateTime       @db.Date
+  total_price  Int            @default(0)
+  deposit      Int?           @default(0)
+  late_fee     Int?           @default(0)
+  status       String         @default("PENDING") @db.VarChar(30)
+  created_at   DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?      @default(now()) @db.Timestamptz(6)
+  rental_items rental_items[]
+  users        users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rental_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String    @db.VarChar(100)
+  email      String    @unique @db.VarChar(150)
+  password   String    @db.VarChar(255)
+  phone      String?   @db.VarChar(20)
+  address    String?
+  role       String    @default("USER") @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  rentals    rentals[]
+}

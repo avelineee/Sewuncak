@@ -38,6 +38,23 @@ export class UsersService {
       address: data.address,
       role: data.role,
       },
+      
     });
   }
+  async findAll() {
+  return this.prisma.users.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      role: true,
+      created_at: true,
+    },
+    orderBy: {
+      id: 'asc',
+    },
+  });
+}
 }

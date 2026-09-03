@@ -28,9 +28,9 @@ export class CreateOutfitDto {
   @IsNotEmpty()
   name: string;
 
-  @IsEnum(OutfitCategory)
+  @IsString()
   @IsNotEmpty()
-  category: OutfitCategory;
+  category: string;
 
   @IsString()
   @IsOptional()
@@ -53,7 +53,7 @@ export class CreateOutfitDto {
   @IsOptional()
   stock?: number;
 
-  @IsUrl()
+  @IsString()
   @IsOptional()
   image_url?: string;
 

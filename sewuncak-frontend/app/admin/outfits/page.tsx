@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { MOCK_OUTFITS } from '@/lib/api';
+import React, { useState, useEffect } from 'react';
+import { getOutfits, createOutfit, updateOutfit, deleteOutfit } from '@/lib/api';
 import { Package, Plus, Edit, Trash2, CheckCircle2, Search, X } from 'lucide-react';
 
 export default function AdminOutfitsPage() {
-  const [outfits, setOutfits] = useState(MOCK_OUTFITS);
+  const [outfits, setOutfits] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -18,6 +18,19 @@ export default function AdminOutfitsPage() {
   const [stock, setStock] = useState(5);
   const [size, setSize] = useState('L');
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=800');
+
+  const fetchOutfits = async () => {
+    try {
+      const res = await getOutfits();
+      setOutfits(Array.isArray(res) ? res : res?.data || []);
+    } catch (err) {
+      console.error('Failed to load outfits', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchOutfits();
+  }, []);
 
   const openAddModal = () => {
     setEditingId(null);
@@ -43,49 +56,41 @@ export default function AdminOutfitsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Apakah Anda yakin ingin menghapus outfit ini?')) {
-      setOutfits((prev) => prev.filter((item) => item.id !== id));
+      try {
+        await deleteOutfit(id);
+        fetchOutfits();
+      } catch (err) {
+        alert('Gagal menghapus outfit');
+      }
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      // Edit existing
-      setOutfits((prev) =>
-        prev.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                name,
-                category,
-                description,
-                price_per_day: pricePerDay,
-                stock,
-                size,
-                image_url: imageUrl,
-              }
-            : item
-        )
-      );
-    } else {
-      // Add new
-      const newItem = {
-        id: Date.now(),
-        name,
-        category,
-        description,
-        price_per_day: pricePerDay,
-        stock,
-        size,
-        color: 'Outdoor Mix',
-        status: 'AVAILABLE',
-        image_url: imageUrl,
-      };
-      setOutfits([newItem, ...outfits]);
+    const payload = {
+      name,
+      category,
+      description,
+      price_per_day: Number(pricePerDay),
+      stock: Number(stock),
+      size,
+      color: 'Outdoor Mix',
+      image_url: imageUrl,
+    };
+
+    try {
+      if (editingId) {
+        await updateOutfit(editingId, payload);
+      } else {
+        await createOutfit({ ...payload, status: 'AVAILABLE' });
+      }
+      fetchOutfits();
+      setIsModalOpen(false);
+    } catch (err) {
+      alert('Gagal menyimpan outfit');
     }
-    setIsModalOpen(false);
   };
 
   const filtered = outfits.filter((item) =>

@@ -39,8 +39,9 @@ export default function AdminUsersPage() {
       try {
         setLoading(true);
         const res = await fetchApi('/users');
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          setUsersList(res.data);
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        if (list && list.length > 0) {
+          setUsersList(list);
         }
       } catch (err) {
         console.warn('Using default demo users data:', err);

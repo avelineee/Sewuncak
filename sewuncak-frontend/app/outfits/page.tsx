@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Filter, ShoppingBag, Eye, Star, ChevronDown, Check } from 'lucide-react';
-import { MOCK_OUTFITS } from '@/lib/api';
+import { getOutfits } from '@/lib/api';
 import { useCart } from '@/lib/CartContext';
 
 export default function OutfitsPage() {
@@ -13,6 +13,23 @@ export default function OutfitsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [maxPrice, setMaxPrice] = useState<number>(100000);
   const [sortBy, setSortBy] = useState<'PRICE_ASC' | 'PRICE_DESC' | 'NAME'>('PRICE_ASC');
+  
+  const [outfits, setOutfits] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await getOutfits();
+        setOutfits(Array.isArray(res) ? res : res?.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const categories = [
     { key: 'ALL', label: 'Semua Outfit' },
@@ -24,7 +41,7 @@ export default function OutfitsPage() {
     { key: 'Penerangan', label: '🔦 Penerangan' },
   ];
 
-  const filteredOutfits = MOCK_OUTFITS.filter((item) => {
+  const filteredOutfits = outfits.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.description?.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
@@ -35,6 +52,14 @@ export default function OutfitsPage() {
     if (sortBy === 'PRICE_DESC') return b.price_per_day - a.price_per_day;
     return a.name.localeCompare(b.name);
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-400"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">

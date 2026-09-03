@@ -15,11 +15,27 @@ import {
   ShoppingBag,
   TrendingUp,
 } from 'lucide-react';
-import { MOCK_OUTFITS } from '@/lib/api';
+import { getOutfits } from '@/lib/api';
 import { useCart } from '@/lib/CartContext';
 
 export default function HomePage() {
   const { addToCart } = useCart();
+  const [outfits, setOutfits] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const res = await getOutfits();
+        setOutfits(Array.isArray(res) ? res : res?.data || []);
+      } catch (err) {
+        console.error('Failed to load featured outfits:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const categories = [
     { title: 'Tenda & Shelter', icon: '⛺', count: '12+ Pilihan', desc: 'Tenda anti badai double-layer' },
@@ -172,13 +188,13 @@ export default function HomePage() {
             href="/outfits"
             className="flex items-center gap-2 text-xs font-bold text-emerald-400 hover:text-white transition-colors"
           >
-            <span>Lihat Semua ({MOCK_OUTFITS.length}+ Item)</span>
+            <span>Lihat Semua Koleksi</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {MOCK_OUTFITS.slice(0, 3).map((item) => (
+          {outfits.slice(0, 3).map((item) => (
             <div key={item.id} className="glass-card rounded-3xl overflow-hidden flex flex-col group">
               <div className="relative h-56 overflow-hidden">
                 <img

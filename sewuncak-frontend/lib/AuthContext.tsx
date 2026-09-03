@@ -60,22 +60,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
     } catch (err: any) {
-      // Fallback demo fast-login if backend fails
-      console.warn('Backend login failed, fallback demo user activated:', err.message);
-      const isDemoAdmin = email.toLowerCase().includes('admin');
-      const mockUser: UserProfile = {
-        id: isDemoAdmin ? 1 : 2,
-        name: isDemoAdmin ? 'Admin Sewuncak' : 'Pendaki Pro',
-        email,
-        phone: '081234567890',
-        address: 'Malang, Jawa Timur',
-        role: isDemoAdmin ? 'ADMIN' : 'USER',
-      };
-      const mockToken = 'demo-jwt-token-sewuncak';
-      setToken(mockToken);
-      setUser(mockUser);
-      localStorage.setItem('sewuncak_token', mockToken);
-      localStorage.setItem('sewuncak_user', JSON.stringify(mockUser));
+      console.error('Login failed:', err);
+      throw err;
     }
   };
 
@@ -88,20 +74,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Auto login after register
       await login(data.email, data.password);
     } catch (err: any) {
-      // Fallback if backend unavailable
-      const mockUser: UserProfile = {
-        id: Date.now(),
-        name: data.name,
-        email: data.email,
-        phone: data.phone || '08123456789',
-        address: data.address || 'Indonesia',
-        role: (data.role as any) || 'USER',
-      };
-      const mockToken = 'demo-jwt-token-sewuncak';
-      setToken(mockToken);
-      setUser(mockUser);
-      localStorage.setItem('sewuncak_token', mockToken);
-      localStorage.setItem('sewuncak_user', JSON.stringify(mockUser));
+      console.error('Register failed:', err);
+      throw err;
     }
   };
 

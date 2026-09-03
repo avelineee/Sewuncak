@@ -1,11 +1,37 @@
 'use client';
 
-import React from 'react';
-import { useCart } from '@/lib/CartContext';
+import React, { useState, useEffect } from 'react';
+import { getRentals, updateRentalStatus } from '@/lib/api';
 import { CalendarCheck, CheckCircle2, Clock, XCircle, ShieldCheck, User } from 'lucide-react';
 
 export default function AdminRentalsPage() {
-  const { rentals, updateRentalStatus } = useCart();
+  const [rentals, setRentals] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchRentals = async () => {
+    try {
+      const res = await getRentals();
+      setRentals(Array.isArray(res) ? res : res?.data || []);
+    } catch (err) {
+      console.error('Failed to load rentals', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRentals();
+  }, []);
+
+  const handleUpdateStatus = async (id: number, status: string) => {
+    try {
+      await updateRentalStatus(id, status);
+      fetchRentals();
+    } catch (err) {
+      console.error('Failed to update status', err);
+      alert('Gagal mengupdate status penyewaan.');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -31,10 +57,10 @@ export default function AdminRentalsPage() {
                 </span>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2 mt-1">
                   <User className="w-4 h-4 text-emerald-400" />
-                  {rental.user_name} ({rental.user_email})
+                  {rental.users?.name || 'Unknown'} ({rental.users?.email || 'No Email'})
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  Tanggal Sewa: <strong className="text-white">{rental.rental_date}</strong> s/d <strong className="text-white">{rental.return_date}</strong> ({rental.days} Hari)
+                  Tanggal Sewa: <strong className="text-white">{new Date(rental.rental_date).toLocaleDateString()}</strong> s/d <strong className="text-white">{new Date(rental.return_date).toLocaleDateString()}</strong>
                 </p>
               </div>
 
@@ -42,7 +68,7 @@ export default function AdminRentalsPage() {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 font-semibold mr-2">Ubah Status:</span>
                 <button
-                  onClick={() => updateRentalStatus(rental.id, 'APPROVED')}
+                  onClick={() => handleUpdateStatus(rental.id, 'APPROVED')}
                   className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
                     rental.status === 'APPROVED'
                       ? 'bg-emerald-500 text-slate-950 shadow-md'
@@ -52,7 +78,7 @@ export default function AdminRentalsPage() {
                   Disetujui
                 </button>
                 <button
-                  onClick={() => updateRentalStatus(rental.id, 'RENTED')}
+                  onClick={() => handleUpdateStatus(rental.id, 'RENTED')}
                   className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
                     rental.status === 'RENTED'
                       ? 'bg-amber-500 text-slate-950 shadow-md'
@@ -62,7 +88,7 @@ export default function AdminRentalsPage() {
                   Sedang Disewa
                 </button>
                 <button
-                  onClick={() => updateRentalStatus(rental.id, 'RETURNED')}
+                  onClick={() => handleUpdateStatus(rental.id, 'RETURNED')}
                   className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
                     rental.status === 'RETURNED'
                       ? 'bg-teal-500 text-slate-950 shadow-md'
@@ -72,7 +98,7 @@ export default function AdminRentalsPage() {
                   Dikembalikan
                 </button>
                 <button
-                  onClick={() => updateRentalStatus(rental.id, 'CANCELLED')}
+                  onClick={() => handleUpdateStatus(rental.id, 'CANCELLED')}
                   className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
                     rental.status === 'CANCELLED'
                       ? 'bg-red-500 text-slate-950 shadow-md'
@@ -90,14 +116,14 @@ export default function AdminRentalsPage() {
                 Rincian Outfit Disewa:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {rental.items.map((item, idx) => (
+                {(rental.rental_items || rental.items || []).map((item: any, idx: number) => (
                   <div key={idx} className="bg-[#0b1311]/80 border border-emerald-950 p-3 rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-white block">{item.name}</span>
+                      <span className="text-xs font-bold text-white block">{item.outfits?.name || item.name || 'Outfit'}</span>
                       <span className="text-[10px] text-gray-400">Qty: {item.quantity} Unit</span>
                     </div>
                     <span className="text-xs font-bold text-emerald-400">
-                      Rp {(item.price_per_day * item.quantity * rental.days).toLocaleString('id-ID')}
+                      Rp {(item.subtotal || (item.price_per_day * item.quantity) || 0).toLocaleString('id-ID')}
                     </span>
                   </div>
                 ))}
@@ -107,10 +133,10 @@ export default function AdminRentalsPage() {
             {/* Total Summary */}
             <div className="flex justify-between items-center bg-emerald-950/40 p-4 rounded-2xl border border-emerald-800/40">
               <span className="text-xs text-gray-300">
-                Deposit Jaminan: <strong className="text-amber-400">Rp {rental.deposit.toLocaleString('id-ID')}</strong>
+                Deposit Jaminan: <strong className="text-amber-400">Rp {(rental.deposit || 0).toLocaleString('id-ID')}</strong>
               </span>
               <span className="text-lg font-black text-emerald-400">
-                Total Tagihan: Rp {rental.total_price.toLocaleString('id-ID')}
+                Total Tagihan: Rp {(rental.total_price || 0).toLocaleString('id-ID')}
               </span>
             </div>
           </div>

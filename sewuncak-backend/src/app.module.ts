@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { OutfitModule } from './outfit/outfit.module';
 import { RentalModule } from './rental/rental.module';
 
+import { UsersModule } from './users/users.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,6 +19,7 @@ import { RentalModule } from './rental/rental.module';
     AuthModule,
     OutfitModule,
     RentalModule,
+    UsersModule,
   ],
 
   controllers: [AppController],

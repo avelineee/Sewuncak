@@ -15,15 +15,13 @@ export class RentalService {
     const { user_id, rental_date, return_date, items } = createRentalDto;
 
     // Hitung jumlah hari sewa
-    const days = Math.ceil(
+    let days = Math.ceil(
       (new Date(return_date).getTime() - new Date(rental_date).getTime()) /
         (1000 * 60 * 60 * 24),
     );
 
     if (days <= 0) {
-      throw new BadRequestException(
-        'return_date harus setelah rental_date',
-      );
+      days = 1;
     }
 
     // Validasi tiap outfit: cek ada & stok cukup
@@ -79,14 +77,24 @@ export class RentalService {
 
   findAll() {
     return this.prisma.rentals.findMany({
-      include: { rental_items: true },
+      include: {
+        users: { select: { name: true, email: true, phone: true } },
+        rental_items: {
+          include: { outfits: true },
+        },
+      },
+      orderBy: { created_at: 'desc' },
     });
   }
 
   async findOne(id: number) {
     const rental = await this.prisma.rentals.findUnique({
       where: { id },
-      include: { rental_items: true },
+      include: {
+        rental_items: {
+          include: { outfits: true },
+        },
+      },
     });
 
     if (!rental) {
@@ -99,7 +107,11 @@ export class RentalService {
   findByUser(userId: number) {
     return this.prisma.rentals.findMany({
       where: { user_id: userId },
-      include: { rental_items: true },
+      include: {
+        rental_items: {
+          include: { outfits: true },
+        },
+      },
     });
   }
 

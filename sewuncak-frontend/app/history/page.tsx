@@ -3,16 +3,31 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
-import { useCart } from '@/lib/CartContext';
+import { getUserRentals } from '@/lib/api';
 import { History, Calendar, CheckCircle2, Clock, AlertTriangle, XCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function HistoryPage() {
   const { user } = useAuth();
-  const { rentals } = useCart();
+  const [userRentals, setUserRentals] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const userRentals = user
-    ? rentals.filter((r) => r.user_email === user.email || r.user_name === user.name)
-    : rentals;
+  React.useEffect(() => {
+    async function load() {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const res = await getUserRentals(user.id);
+        setUserRentals(Array.isArray(res) ? res : res?.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, [user]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -48,6 +63,14 @@ export default function HistoryPage() {
         );
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-400"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -91,7 +114,7 @@ export default function HistoryPage() {
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-300">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                      {rental.rental_date} s/d {rental.return_date} ({rental.days} Hari)
+                      {new Date(rental.rental_date).toLocaleDateString()} s/d {new Date(rental.return_date).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -105,15 +128,15 @@ export default function HistoryPage() {
                   Perlengkapan Yang Disewa:
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {rental.items.map((item, idx) => (
+                  {(rental.rental_items || rental.items || []).map((item: any, idx: number) => (
                     <div key={idx} className="bg-[#0b1311]/80 border border-emerald-950 p-3.5 rounded-2xl flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-emerald-950/60 text-emerald-400 flex items-center justify-center font-bold shrink-0">
                         🎒
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-white truncate">{item.name}</h4>
+                        <h4 className="text-xs font-bold text-white truncate">{item.outfits?.name || item.name || 'Outfit'}</h4>
                         <span className="text-[10px] text-gray-400 block">
-                          Qty: {item.quantity} x Rp {item.price_per_day.toLocaleString('id-ID')} /hr
+                          Qty: {item.quantity} x Rp {(item.price_per_day || item.outfits?.price_per_day || 0).toLocaleString('id-ID')} /hr
                         </span>
                       </div>
                     </div>
@@ -130,7 +153,7 @@ export default function HistoryPage() {
                 <div className="text-right">
                   <span className="text-[10px] text-gray-400 uppercase font-semibold block">Total Pembayaran</span>
                   <span className="text-xl font-black text-emerald-400">
-                    Rp {rental.total_price.toLocaleString('id-ID')}
+                    Rp {(rental.total_price || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>

@@ -3,7 +3,7 @@
 import React, { useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MOCK_OUTFITS } from '@/lib/api';
+import { getOutfitById } from '@/lib/api';
 import { useCart } from '@/lib/CartContext';
 import {
   ArrowLeft,
@@ -22,12 +22,30 @@ export default function OutfitDetailPage({ params }: { params: Promise<{ id: str
   const { addToCart, setRentalDates, startDate, endDate } = useCart();
 
   const outfitId = Number(resolvedParams.id);
-  const outfit = MOCK_OUTFITS.find((item) => item.id === outfitId) || MOCK_OUTFITS[0];
+  const [outfit, setOutfit] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [localStartDate, setLocalStartDate] = useState(startDate);
   const [localEndDate, setLocalEndDate] = useState(endDate);
   const [quantity, setQuantity] = useState(1);
   const [successMsg, setSuccessMsg] = useState(false);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const res = await getOutfitById(outfitId);
+        const item = res?.data || res;
+        if (item && item.id) {
+          setOutfit(item);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, [outfitId]);
 
   const calculateDays = (start: string, end: string) => {
     const d1 = new Date(start);
@@ -37,7 +55,7 @@ export default function OutfitDetailPage({ params }: { params: Promise<{ id: str
   };
 
   const durationDays = calculateDays(localStartDate, localEndDate);
-  const totalPrice = outfit.price_per_day * durationDays * quantity;
+  const totalPrice = outfit ? outfit.price_per_day * durationDays * quantity : 0;
 
   const handleAddToCart = () => {
     setRentalDates(localStartDate, localEndDate);
@@ -51,6 +69,22 @@ export default function OutfitDetailPage({ params }: { params: Promise<{ id: str
     addToCart(outfit, quantity);
     router.push('/rental');
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-400"></div>
+      </div>
+    );
+  }
+
+  if (!outfit) {
+    return (
+      <div className="text-center py-20 text-white">
+        Outfit tidak ditemukan.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">

@@ -1,7 +1,8 @@
-import { IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export enum RentalStatus {
   PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
   PAID = 'PAID',
   PROCESSING = 'PROCESSING',
   RENTED = 'RENTED',
@@ -11,6 +12,7 @@ export enum RentalStatus {
 }
 
 export class UpdateRentalStatusDto {
-  @IsEnum(RentalStatus)
-  status: RentalStatus;
+  @IsString()
+  @IsNotEmpty()
+  status: string;
 }

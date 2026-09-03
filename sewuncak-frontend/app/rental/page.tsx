@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { useCart } from '@/lib/CartContext';
+import { createRental } from '@/lib/api';
 import {
   ShoppingBag,
   Trash2,
@@ -20,7 +21,7 @@ import {
 
 export default function RentalCheckoutPage() {
   const { user } = useAuth();
-  const { cart, startDate, endDate, daysDuration, removeFromCart, updateQuantity, clearCart, addRentalTransaction } = useCart();
+  const { cart, startDate, endDate, daysDuration, removeFromCart, updateQuantity, clearCart } = useCart();
   const router = useRouter();
 
   const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'TRANSFER' | 'BASECAMP'>('QRIS');
@@ -30,7 +31,7 @@ export default function RentalCheckoutPage() {
   const deposit = subtotal > 0 ? 50000 : 0;
   const totalPay = subtotal + deposit;
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
       router.push('/login');
@@ -38,23 +39,28 @@ export default function RentalCheckoutPage() {
     }
     if (cart.length === 0) return;
 
-    addRentalTransaction({
-      rental_date: startDate,
-      return_date: endDate,
-      days: daysDuration,
-      items: cart,
-      total_price: totalPay,
-      deposit: deposit,
-      status: 'PENDING',
-      user_name: user.name,
-      user_email: user.email,
-      user_phone: user.phone || '081234567890',
-    });
+    try {
+      const formattedStartDate = startDate ? new Date(startDate).toISOString() : new Date().toISOString();
+      const formattedEndDate = endDate ? new Date(endDate).toISOString() : new Date(Date.now() + 86400000).toISOString();
 
-    setSuccess(true);
-    setTimeout(() => {
-      router.push('/history');
-    }, 2000);
+      await createRental({
+        user_id: Number(user.id),
+        rental_date: formattedStartDate,
+        return_date: formattedEndDate,
+        items: cart.map((i) => ({
+          outfit_id: Number(i.id),
+          quantity: Number(i.quantity),
+        })),
+      });
+      clearCart();
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/history');
+      }, 2000);
+    } catch (err: any) {
+      console.error('Checkout failed', err);
+      alert(err.message || 'Gagal melakukan checkout, silakan coba lagi.');
+    }
   };
 
   if (success) {

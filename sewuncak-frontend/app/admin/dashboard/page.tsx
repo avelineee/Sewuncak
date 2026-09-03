@@ -1,10 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
-import { useCart } from '@/lib/CartContext';
-import { MOCK_OUTFITS } from '@/lib/api';
+import { getOutfits, getRentals } from '@/lib/api';
 import {
   LayoutDashboard,
   Package,
@@ -19,11 +18,31 @@ import {
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const { rentals } = useCart();
+  const [totalOutfitCount, setTotalOutfitCount] = useState(0);
+  const [totalRentalsCount, setTotalRentalsCount] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
-  const totalOutfitCount = MOCK_OUTFITS.length;
-  const totalRentalsCount = rentals.length;
-  const totalRevenue = rentals.reduce((acc, r) => acc + r.total_price, 0);
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const [outfitsRes, rentalsRes] = await Promise.all([
+          getOutfits(),
+          getRentals()
+        ]);
+        
+        const outfits = Array.isArray(outfitsRes) ? outfitsRes : outfitsRes?.data || [];
+        const rentals = Array.isArray(rentalsRes) ? rentalsRes : rentalsRes?.data || [];
+
+        setTotalOutfitCount(outfits.length);
+        setTotalRentalsCount(rentals.length);
+        const rev = rentals.reduce((acc: number, r: any) => acc + (r.total_price || 0), 0);
+        setTotalRevenue(rev);
+      } catch (err) {
+        console.error('Failed to load stats', err);
+      }
+    }
+    loadStats();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">

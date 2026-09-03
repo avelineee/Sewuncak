@@ -15,7 +15,7 @@ export class PrismaService
     const connectionString =
       configService?.get<string>('DATABASE_URL') ||
       process.env.DATABASE_URL ||
-      'postgresql://postgres:postgres@localhost:5432/sewuncak?schema=public';
+      'postgresql://postgres:postgres@localhost:5433/sewuncak?schema=public';
 
     const adapter = new PrismaPg({
       connectionString,
